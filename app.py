@@ -2,14 +2,31 @@ from datetime import datetime
 import json
 import random
 
-import db
+from db import db
 from flask import Flask
 from flask import request
 
-DB = db.DatabaseDriver()
+from db import User
+from db import Match
+from db import Message
 
 app = Flask(__name__)
 
+db_filename = "fetch.db"
+
+app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///%s" % db_filename
+app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
+app.config["SQLALCHEMY_ECHO"] = True
+
+db.init_app(app)
+with app.app_context():
+    db.create_all()
+
+def success_response(data, code = 200):
+    return json.dumps(data), code
+
+def error_response(message, code = 404):
+    return json.dumps({"error" : message}), code    
 
 @app.route("/")
 def hello_world():
@@ -21,7 +38,13 @@ def get_users():
     """
     Endpoint for getting all users
     """
-    return json.dumps({"users":DB.get_all_users()}), 200
+    users = []
+    for user in User.query.all():
+        users.append(user.serialize())
+
+    return success_response({"users": users})
+
+#DONE UP TO HERE
 
 @app.route("/api/users/", methods=["POST"])
 def create_user():
@@ -31,16 +54,20 @@ def create_user():
     body = json.loads(request.data)
     name = body.get("name")
     age =  body.get("age")
+    bio = body.get("bio")
 
     if name is None:
         return json.dumps({"error": "Unable to create user, name not supplied."}), 400
     if age is None:
         return json.dumps({"error": "Unable to create user, age not supplied."}), 400
+    if bio is None:
+        return json.dumps({"error": "Unable to create user, bio not supplied."}), 400
    
-
-    user_id = DB.insert_user_table(name, age)
-    user = DB.get_user_by_id(user_id)
-    return json.dumps(user), 201
+    new_user = User(name = name, age = age, bio = bio)
+    db.session.add(new_user)
+    db.session.commit()
+    return success_response(new_user.serialize(), 201)
+#DONE UP TO HERE
 
 @app.route("/api/users/<int:user_id>/", methods=["GET"])
 def get_user(user_id):
