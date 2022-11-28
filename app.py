@@ -44,7 +44,7 @@ def get_users():
 
     return success_response({"users": users})
 
-#DONE UP TO HERE
+
 
 @app.route("/api/users/", methods=["POST"])
 def create_user():
@@ -75,10 +75,13 @@ def get_user(user_id):
     Endpoint for getting a user by id. Use this when the user wants to view their
     own profile.
     """
-    user = DB.get_user_by_id(user_id)
+    user = User.query.filter_by(id = user_id).first()
+    print(user)
     if user is None:
-        return json.dumps({"error": "User not found"}), 404
-    return json.dumps(user), 200
+        return error_response("User not found")
+
+    return success_response(user.serialize())    
+
 
 @app.route("/api/users/<int:user_id>/", methods=["DELETE"])
 def delete_user(user_id):
@@ -86,12 +89,21 @@ def delete_user(user_id):
     Endpoint for deleting a user from database by id. Use this when a user deletes
     their own account.
     """
-    user = DB.get_user_by_id(user_id)
+    # user = DB.get_user_by_id(user_id)
+    # if user is None:
+    #     return json.dumps({"error": "User not found"}), 404
+    # DB.delete_user_by_id(user_id)
+    # return json.dumps(user), 200
+    user = User.query.filter_by(id = user_id).first()
     if user is None:
-        return json.dumps({"error": "User not found"}), 404
-    DB.delete_user_by_id(user_id)
-    return json.dumps(user), 200
+        return error_response("User not found")
 
+    print('user:' + repr(user))
+    db.session.delete(user)
+    db.session.commit()
+    return success_response(user.serialize())     
+
+#DONE UP TO HERE
 @app.route("/api/users/<int:user_id>/", methods=["POST"])
 def update_profile(user_id):
     """
