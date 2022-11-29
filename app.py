@@ -11,6 +11,7 @@ import random
 from db import db
 from flask import Flask
 from flask import request
+import os
 
 from db import User
 from db import Match
@@ -111,17 +112,6 @@ def update_profile(user_id):
     updating their profile.
     """
     body = json.loads(request.data)
-    # name = body.get("name")
-    # age = body.get("age")
-    # bio = body.get("bio")
-
-    # if name is None:
-    #     return json.dumps({"error": "cannot update profile because name not supplied"}), 400
-    # if age is None:
-    #     return json.dumps({"error": "cannot update profile because age not supplied"}), 400
-    # if bio is None:
-    #     return json.dumps({"error": "cannot update profile because bio not supplied"}), 400
-        
 
     user = User.query.filter_by(id = user_id).first()
     if user is None:
@@ -171,12 +161,15 @@ def handle_match():
     if req_user_1_id == req_user_2_id:
         return json.dumps({"error": "user cannot match with themselves"}), 403
 
-    #explain this!!!
-    existing_match = Match.query.filter_by(user_id_1 = req_user_2_id, user_id_2 = req_user_1_id).first()
+    #query determines whether user with req_user_2_id has already 
+    #initiated a match with the user with id req_user_1_id, in 
+    #which case, we would just update that match instead of creating
+    #a new one
+    existing_match = Match.query.filter_by(user_id_1 = req_user_2_id, user_id_2 = req_user_1_id, accepted = None).first()
 
     if existing_match is None:
         print('NEW MATCH BEING CREATED')
-        new_match = Match(time_stamp = 'filler time stamp', user_id_1 = req_user_1_id, user_id_2 = req_user_2_id, accepted = False)
+        new_match = Match(time_stamp = 'filler time stamp', user_id_1 = req_user_1_id, user_id_2 = req_user_2_id, accepted = None)
         db.session.add(new_match)
     else:
         print('UPDATING EXISTING MATCH TO BE ACCEPTED')
@@ -201,10 +194,10 @@ def unmatch(match_id):
     # DB.delete_match_by_id(match_id)
     # return json.dumps(match), 200
 
-    match = Match.query.filter_by(id = match_id)
+    match = Match.query.filter_by(id = match_id).first()
     if match is None:
         return error_response('match with given match_id does not exist')
-    db.session.delete(match)
+    match.accepted = False
     db.session.commit()
     return success_response(match.serialize())       
 
@@ -232,7 +225,7 @@ def get_user_matches(user_id):
     if matches_intitated is not None:
         for row in matches_intitated:
             matched_users.append(
-                User.query.filter_by(id = row.user_id_2))
+                User.query.filter_by(id = row.user_id_2).first().serialize())
     
     #in matches table, query for all the user-2_ids being the given id
     #add all of the user_1 ids to that array
@@ -240,7 +233,7 @@ def get_user_matches(user_id):
     if matches_accepted is not None:
         for row in matches_accepted:
             matched_users.append(
-                User.query.filter_by(id = row.user_id_1))
+                User.query.filter_by(id = row.user_id_1).first().serialize())
 
     return success_response(matched_users)
 
@@ -251,14 +244,16 @@ def get_user_matches(user_id):
 # (1) the user_id is not user_1_id in a match and accepted is false or
 # (2) a match with the user_id does not exist
 @app.route("/api/users/<int:user_id>/notmatched/", methods=["GET"])
-def get_potential_matches(user_id):
+def get_users_to_show(user_id):
     """
     Endpoint for getting a user's potential matches. Use this to display users
     the user hasn't matched with yet.
     """
-    #tracks all 
-    potential_matches = []
-    interacted_user_ids = []
+    #will contain User Objects from ORM to show to user that they should interact with
+    users_to_show = []
+
+    #STORE IDS OF EVERY USER WE DON'T WANT TO SHOW
+    interacted_user_ids = [user_id]
     
     #https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_orm_filter_operators.htm
     #https://stackoverflow.com/questions/26182027/how-to-use-not-in-clause-in-sqlalchemy-orm-query
@@ -270,64 +265,33 @@ def get_potential_matches(user_id):
     if user is None:
         return error_response('user not found')
 
-    #users that have matched with given user but given user hasn't matched with
-    users_unaccepted = Match.query.filter_by(user_id_2 = user_id,accepted = False)
-    if users_unaccepted is not None:
-        for row in users_unaccepted:
-            potential_matches.append(
-                User.query.filter_by(id = row.user_id_1))
-            interacted_user_ids.append(row.user_id_1)   
-
-    matches_intitated = Match.query.filter_by(user_id_1 = user_id, accepted = True)
-    if matches_intitated is not None:
-        for row in matches_intitated:
-            potential_matches.append(
-                User.query.filter_by(id = row.user_id_2))
-            interacted_user_ids.append(row.user_id_2)             
+    #goal is to get the ids of everyone we DON'T want to show
 
 
+    #we DON'T want everyone where the given user accepted, rejected, or initiated a potential match
+    #that would be represented by all columns in matches where user_id_1 is given id, so store their ids
+    user_initiated_actions = Match.query.filter_by(user_id_1 = user_id)
+    for row in user_initiated_actions:
+        interacted_user_ids.append(row.user_id_2)
+
+    # we DON't want everyone who has already rejected the given user, so store their ids
+    already_got_rejected = Match.query.filter_by(user_id_2 = user_id,accepted = False)
+    for row in already_got_rejected:
+        interacted_user_ids.append(row.user_id_1)
+
+    # we DON't want everyone who has already rejected the given user, so store their ids
+    already_got_rejected = Match.query.filter_by(user_id_2 = user_id,accepted = True)
+    for row in already_got_rejected:
+        interacted_user_ids.append(row.user_id_1)    
+
+       
+    for user in User.query.filter(User.id.not_in(interacted_user_ids)):
+        users_to_show.append(
+            user.serialize())
 
 
-    #others - everyone that hasn't interacted with user yet and user
-    #             
-    for user in User.query.filter_by(id not in interacted_user_ids):
-        users.append(user.serialize())
-
-    return success_response({"users": users})
+    return users_to_show        
             
-
-
-    
-
-
-
-
-
-    # user = DB.get_user_by_id(user_id)
-    # if user is None:
-    #     return json.dumps({"error": "User not found"}), 404
-
-    # users_matched_with = []
-    # matches = DB.get_matches_by_user_id(user_id)
-    # for match in matches:
-    #     if match["user_1_id"] == user_id:
-    #         users_matched_with.append(match["user_2_id"])
-    #     elif match["accepted"]:
-    #         users_matched_with.append(match["user_1_id"])
-    
-    # all_users = DB.get_all_users()
-    # not_matched = []
-    # for user in all_users:
-    #     if user["id"] not in users_matched_with and user["id"] != user_id:
-    #         not_matched.append(user)
-
-    # return json.dumps({"not matched with":not_matched}), 200
-
-    # if we want this to be a randomized single user from not_matched, the code
-    # below will handle that instead of the return statement above
-    # if len(not_matched) == 0:
-    #     return json.dumps({"error":"out of users!"}), 404
-    # return json.dumps(random.choice(not_matched)), 200
 
 @app.route("/api/messages/", methods=["POST"])
 def send_message():

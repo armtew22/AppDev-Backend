@@ -32,7 +32,7 @@ class Match(db.Model):
     time_stamp = db.Column(db.String, nullable = False)
     user_id_1 = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
     user_id_2 = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
-    accepted = db.Column(db.Boolean, nullable = False)
+    accepted = db.Column(db.Boolean)
 
     def __init__(self, **kwargs):
         #ask Marya if this is the right way to initialize it
