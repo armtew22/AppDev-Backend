@@ -1,3 +1,9 @@
+"""
+*** MESSAGE TO ARMAAN AND ALEX: IMPLEMENT MATCH DB INCLUDING NONE TYPE ***
+
+"""
+
+
 from datetime import datetime
 import json
 import random
@@ -67,7 +73,7 @@ def create_user():
     db.session.add(new_user)
     db.session.commit()
     return success_response(new_user.serialize(), 201)
-#DONE UP TO HERE
+
 
 @app.route("/api/users/<int:user_id>/", methods=["GET"])
 def get_user(user_id):
@@ -88,11 +94,6 @@ def delete_user(user_id):
     Endpoint for deleting a user from database by id. Use this when a user deletes
     their own account.
     """
-    # user = DB.get_user_by_id(user_id)
-    # if user is None:
-    #     return json.dumps({"error": "User not found"}), 404
-    # DB.delete_user_by_id(user_id)
-    # return json.dumps(user), 200
     user = User.query.filter_by(id = user_id).first()
     if user is None:
         return error_response("User not found")
@@ -170,7 +171,7 @@ def handle_match():
     if req_user_1_id == req_user_2_id:
         return json.dumps({"error": "user cannot match with themselves"}), 403
 
-
+    #explain this!!!
     existing_match = Match.query.filter_by(user_id_1 = req_user_2_id, user_id_2 = req_user_1_id).first()
 
     if existing_match is None:
@@ -257,7 +258,11 @@ def get_potential_matches(user_id):
     """
     #tracks all 
     potential_matches = []
-    matched_user_ids = []
+    interacted_user_ids = []
+    
+    #https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_orm_filter_operators.htm
+    #https://stackoverflow.com/questions/26182027/how-to-use-not-in-clause-in-sqlalchemy-orm-query
+    #https://stackoverflow.com/questions/8603088/sqlalchemy-in-clause
 
 
     #make sure user w given id exists
@@ -271,7 +276,24 @@ def get_potential_matches(user_id):
         for row in users_unaccepted:
             potential_matches.append(
                 User.query.filter_by(id = row.user_id_1))
+            interacted_user_ids.append(row.user_id_1)   
 
+    matches_intitated = Match.query.filter_by(user_id_1 = user_id, accepted = True)
+    if matches_intitated is not None:
+        for row in matches_intitated:
+            potential_matches.append(
+                User.query.filter_by(id = row.user_id_2))
+            interacted_user_ids.append(row.user_id_2)             
+
+
+
+
+    #others - everyone that hasn't interacted with user yet and user
+    #             
+    for user in User.query.filter_by(id not in interacted_user_ids):
+        users.append(user.serialize())
+
+    return success_response({"users": users})
             
 
 

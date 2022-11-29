@@ -10,6 +10,8 @@ class User(db.Model):
     age = db.Column(db.Integer, nullable = False)
     bio = db.Column(db.String, nullable = False)
     name = db.Column(db.String, nullable = False)
+    #implement the location with iOS, latitude and longitude
+    #https://www.zerotoappstore.com/how-to-get-current-location-in-swift.html
 
     def __init__(self, **kwargs):
         self.age = kwargs.get("age", "")
@@ -28,8 +30,8 @@ class Match(db.Model):
     __tablename__ = "match"
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
     time_stamp = db.Column(db.String, nullable = False)
-    user_id_1 = db.Column(db.Integer, nullable = False)
-    user_id_2 = db.Column(db.Integer, nullable = False)
+    user_id_1 = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
+    user_id_2 = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
     accepted = db.Column(db.Boolean, nullable = False)
 
     def __init__(self, **kwargs):
@@ -54,8 +56,11 @@ class Message(db.Model):
 #id, sender_id, receiver_id, timestamp ,match_id, message
     __tablename__ = 'message'
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
-    sender_id = db.Column(db.Integer, nullable = False)
-    receiver_id = db.Column(db.Integer, nullable = False)
+    #fks that points to user table!
+    sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
+    receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable = False)
+
+
     time_stamp = db.Column(db.String, nullable = False)
     match_id = db.Column(db.Integer, db.ForeignKey("match.id"), nullable = False)
     message = db.Column(db.String, nullable = False)
