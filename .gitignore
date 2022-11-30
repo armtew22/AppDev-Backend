@@ -3,3 +3,4 @@ ssh_test.pub
 __pycache__
 venv
 fetch.db
+.env

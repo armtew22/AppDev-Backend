@@ -1,8 +1,22 @@
 from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime
+import datetime
+import base64
+import boto3
+import io
+from io import BytesIO
+from mimetypes import guess_type, guess_extension
+import os
+from PIL import Image
+import random
+import re
+import string
 
 db = SQLAlchemy()
 
+EXTENSIONS = ["png", "gif", "jpg", "jpeg"]
+BASE_DIR = os.cwd()
+S3_BUCKET_NAME = os.environ.get("S#_BUCKET_NAME")
+S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.us-east-1.amazonaws.com"
 #missing location and picture storage + bio is represented as a  string for now
 class User(db.Model):
     __tablename__ = "user"
@@ -36,7 +50,7 @@ class Match(db.Model):
 
     def __init__(self, **kwargs):
         #ask Marya if this is the right way to initialize it
-        self.time_stamp = kwargs.get("time_stamp", str(datetime.now()))
+        self.time_stamp = kwargs.get("time_stamp", str(datetime.datetime.now()))
         self.user_id_1 = kwargs.get("user_id_1", "")
         self.user_id_2 = kwargs.get("user_id_2", "")
         #ask Marya if this is the right way to initialize it
@@ -50,6 +64,10 @@ class Match(db.Model):
             "user_id_2": self.user_id_2,
             "accepted": self.accepted,
         }        
+
+
+
+
 
 
 class Message(db.Model):
@@ -81,6 +99,97 @@ class Message(db.Model):
             "match_id": self.match_id,
             "message": self.message,
         }
+
+class Asset(db.Model):
+    __tablename__ = 'asset'
+    id = db.Column(db.Integer, primary_key = True, autoincrement = True)
+    base_url = db.Column(db.String, nullable = False)
+    salt = db.Column(db.String, nullable = False)
+    extension = db.Column(db.String, nullable = False)
+    width = db.Column(db.Integer, nullable = False)
+    height = db.Column(db.Integer, nullable = False)
+    created_at = db.Column(db.DateTime, nullable = False)
+    user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
+
+    def __init__(self, **kwargs):
+        self.create(kwargs.get("image_data"))
+        self.user_id = kwargs.get("user_id", "")
+
+    def upload(self, img, img_filename):
+            """
+            attempts to upload image to the specified s3 bucket
+            """
+            try:
+                #temporary save image to temporary location
+                img_tmp_loc = f"{BASE_DIR}/{img_filename}"
+                img.save(img_tmp_loc)
+
+                #s3 upload
+                s3_client = boto3.client("s3")
+                s3_client.upload_file(img_tmp_loc, S3_BUCKET_NAME, img_filename)
+
+                s3_resource = boto3.resource("s3")
+                object_acl = s3_resource.ObjectAcl(S3_BUCKET_NAME, img_filename)
+                object_acl.put(ACL = "public-read")
+
+                #del img from temporary location
+                os.remove(img_tmp_loc)
+
+            except Exception as e:
+                print(f"Error when uploading image: {e}")
+
+    def create(self, image_data):
+        """
+        takes in image in base64 encoding:
+        - rejects file if type is not correct
+        - generates random string for name of the image
+        - decodes image and attempts to upload to AWS
+        """    
+        try:
+            ext = guess_extension(guess_type(image_data)[0])[1:]
+            if ext not in EXTENSIONS:
+                raise Exception(f"Extenstion {ext} is invalid!")
+
+            salt = "".join(
+                random.SystemRandom().choice(
+                    string.ascii_uppercase + string.digits
+                )
+                for _ in range(16)
+
+            )
+            img_str = re.sub("^data:image./+;base64,","", image_data)    
+            img_data = base64.b64decode(img_str)
+            img = Image.open(BytesIO(img_data)) 
+
+            self.base_url = S3_BASE_URL
+            self.salt = salt
+            self.extension = ext
+            self.width = img.width
+            self.height = img.height
+            self.created_at = datetime.datetime.now()
+
+            img_filename = f"{self.salt}.{self.extension}"
+
+            self.upload(img, img_filename)
+
+        except Exception as e:
+            print(f"Error when creating image: {e}")
+
+    def serialize(self):
+        """
+        serializes asset object
+        """
+        return {
+            "url": f"{self.base_url}/{self.salt}.{self.extension}",
+            "created_at": str(self.created_at)
+            
+        }        
+
+        
+
+
+
+    
 
 
     
