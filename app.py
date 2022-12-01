@@ -77,19 +77,24 @@ def create_user():
     return success_response(new_user.serialize(), 201)
 
 
+#IMAGE IMPLEMENTATION FOR THIS ROUTE
 @app.route("/api/users/<int:user_id>/", methods=["GET"])
 def get_user(user_id):
     """
     Endpoint for getting a user by id. Use this when the user wants to view their
     own profile.
     """
+    images = []
     user = User.query.filter_by(id = user_id).first()
     if user is None:
         return error_response("User not found")
 
+    user_imgs = Asset.query.filter_by(user_id =user_id):
+    for _ in user_imgs:
+        images.append(_)
     return success_response(user.serialize())    
 
-
+#IMAGE IMPLEMENTATION FOR THIS ROUTE
 @app.route("/api/users/<int:user_id>/", methods=["DELETE"])
 def delete_user(user_id):
     """

@@ -24,6 +24,7 @@ class User(db.Model):
     age = db.Column(db.Integer, nullable = False)
     bio = db.Column(db.String, nullable = False)
     name = db.Column(db.String, nullable = False)
+    images = db.relationship("Asset", cascade = "delete")
     #implement the location with iOS, latitude and longitude
     #https://www.zerotoappstore.com/how-to-get-current-location-in-swift.html
 
@@ -38,6 +39,7 @@ class User(db.Model):
             "age": self.age,
             "bio": self.bio,
             "name": self.name,
+            "images": [i.serialize_no_id() for i in self.images]
         }    
 
 class Match(db.Model):
@@ -181,9 +183,19 @@ class Asset(db.Model):
         """
         return {
             "url": f"{self.base_url}/{self.salt}.{self.extension}",
-            "created_at": str(self.created_at)
+            "created_at": str(self.created_at),
+            "user_id": self.user_id
             
-        }        
+        }    
+    def serialize_no_id(self):
+        """
+        serializes asset object
+        """
+        return {
+            "url": f"{self.base_url}/{self.salt}.{self.extension}",
+            "created_at": str(self.created_at),
+            
+        }          
 
         
 
