@@ -14,8 +14,8 @@ import string
 db = SQLAlchemy()
 
 EXTENSIONS = ["png", "gif", "jpg", "jpeg"]
-BASE_DIR = os.cwd()
-S3_BUCKET_NAME = os.environ.get("S#_BUCKET_NAME")
+BASE_DIR = os.getcwd()
+S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
 S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.us-east-1.amazonaws.com"
 #missing location and picture storage + bio is represented as a  string for now
 class User(db.Model):
@@ -159,7 +159,7 @@ class Asset(db.Model):
                 for _ in range(16)
 
             )
-            img_str = re.sub("^data:image./+;base64,","", image_data)    
+            img_str = re.sub("^data:image/.+;base64,","", image_data)    
             img_data = base64.b64decode(img_str)
             img = Image.open(BytesIO(img_data)) 
 

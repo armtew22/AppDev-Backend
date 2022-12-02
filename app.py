@@ -89,7 +89,7 @@ def get_user(user_id):
     if user is None:
         return error_response("User not found")
 
-    user_imgs = Asset.query.filter_by(user_id =user_id):
+    user_imgs = Asset.query.filter_by(user_id =user_id)
     for _ in user_imgs:
         images.append(_)
     return success_response(user.serialize())    
@@ -175,7 +175,7 @@ def handle_match():
 
     if existing_match is None:
         print('NEW MATCH BEING CREATED')
-        new_match = Match(time_stamp = str(datetime.datetime.now()), user_id_1 = req_user_1_id, user_id_2 = req_user_2_id, accepted = None)
+        new_match = Match(time_stamp = str(datetime.now()), user_id_1 = req_user_1_id, user_id_2 = req_user_2_id, accepted = None)
         db.session.add(new_match)
     else:
         print('UPDATING EXISTING MATCH TO BE ACCEPTED')
