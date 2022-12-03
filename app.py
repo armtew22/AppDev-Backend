@@ -40,7 +40,7 @@ def error_response(message, code = 404):
 def hello_world():
     return "Hello world!"
 
-# your routes here
+
 @app.route("/api/users/")
 def get_users():
     """
@@ -77,7 +77,7 @@ def create_user():
     return success_response(new_user.serialize(), 201)
 
 
-#IMAGE IMPLEMENTATION FOR THIS ROUTE
+
 @app.route("/api/users/<int:user_id>/", methods=["GET"])
 def get_user(user_id):
     """
@@ -94,7 +94,6 @@ def get_user(user_id):
         images.append(_)
     return success_response(user.serialize())    
 
-#IMAGE IMPLEMENTATION FOR THIS ROUTE
 @app.route("/api/users/<int:user_id>/", methods=["DELETE"])
 def delete_user(user_id):
     """
@@ -129,19 +128,8 @@ def update_profile(user_id):
     db.session.commit()
     return success_response(user.serialize())
 
-#DONE UP TO HERE
-
-
-# (1) first get data from request
-# (2) check if both users exist
-# (3) Check if there is already a match that exists where user 1 (person who likes) 
-# is user 2 (in this case someone else liked them) -> no need to create new match 
-# since a match between these two users already exists. Simply set the accepted 
-# field to true
-# (4) If no match exists -> create new match where accepted field is false
 
 @app.route("/api/matches/", methods=["POST"])
-#endpoint is not working but is close to working to API SPECS
 def handle_match():
     """
     Endpoint for a handling one user wanting to match with another. Use this 
@@ -189,16 +177,10 @@ def handle_match():
 
 @app.route("/api/matches/<int:match_id>/", methods=["DELETE"])
 def unmatch(match_id):
-    #done but untested
     """
     Endpoint for deleting a match by its id. Use this when a user wants to 
     unmatch with another user.
     """
-    # match = DB.get_match_by_id(match_id)
-    # if match is None:
-    #     return json.dumps({"error": "match not found"}), 404
-    # DB.delete_match_by_id(match_id)
-    # return json.dumps(match), 200
 
     match = Match.query.filter_by(id = match_id).first()
     if match is None:
@@ -216,7 +198,6 @@ def get_user_matches(user_id):
     Returns an array of ids of users that the user with the given user_id has 
     matched with
     """
-    #initialize and empty arrary
     matched_users = []
 
     #make sure user exists
@@ -243,12 +224,7 @@ def get_user_matches(user_id):
 
     return success_response(matched_users)
 
-#DONE UP TO HERE BUT NOT TESTED
 
-
-# potential matches are matches that satisfy:
-# (1) the user_id is not user_1_id in a match and accepted is false or
-# (2) a match with the user_id does not exist
 @app.route("/api/users/<int:user_id>/notmatched/", methods=["GET"])
 def get_users_to_show(user_id):
     """
@@ -261,11 +237,6 @@ def get_users_to_show(user_id):
     #STORE IDS OF EVERY USER WE DON'T WANT TO SHOW
     interacted_user_ids = [user_id]
     
-    #https://www.tutorialspoint.com/sqlalchemy/sqlalchemy_orm_filter_operators.htm
-    #https://stackoverflow.com/questions/26182027/how-to-use-not-in-clause-in-sqlalchemy-orm-query
-    #https://stackoverflow.com/questions/8603088/sqlalchemy-in-clause
-
-
     #make sure user w given id exists
     user = User.query.filter_by(id = user_id)
     if user is None:
