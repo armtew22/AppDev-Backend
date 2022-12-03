@@ -320,64 +320,6 @@ def upload():
     db.session.commit()    
     return success_response(asset.serialize(),201)      
 
-# @app.route("/api/messages/", methods=["POST"])
-# def send_message():
-#     """
-#     Endpoint for sending a message between users in a match. Use this for when a 
-#     user wants to send a message.
-#     """
-#     # retrieve data from request, make sure it is valid
-#     body = json.loads(request.data)
-#     sender_id = body.get("sender_id")
-#     receiver_id = body.get("receiver_id")
-#     match_id = body.get("match_id")
-#     message = body.get("message")
-
-#     if sender_id is None:
-#         return json.dumps({"error": "Unable to send message, sender id not supplied."}), 400
-#     if receiver_id is None:
-#         return json.dumps({"error": "Unable to send message, receiver id not supplied."}), 400
-#     if match_id is None:
-#         return json.dumps({"error": "Unable to send message, match id not supplied."}), 400
-#     if message is None:
-#         return json.dumps({"error": "Unable to send message, message not supplied."}), 400
-
-#     # check if both users and match exist
-#     match = DB.get_match_by_id(match_id)
-#     sender = DB.get_user_by_id(sender_id)
-#     receiver = DB.get_user_by_id(receiver_id)
-
-#     if match is None:
-#         return json.dumps({"error": "match not found"}), 404
-#     if sender is None:
-#         return json.dumps({"error": "sender not found"}), 404
-#     if receiver is None:
-#         return json.dumps({"error": "receiver not found"}), 404
-    
-#     # check that sender and receiver are matched in match with the match_id
-#     if (match["user_1_id"] != sender_id or match["user_2_id"] != receiver_id) and (match["user_1_id"] != receiver_id or match["user_2_id"] != sender_id):
-#         return json.dumps({"error": "these users are not matched"}), 403
-#     if (match["accepted"] == False):
-#         return json.dumps({"error": "these users are not matched"}), 403
-    
-#     message_id = DB.insert_message_table(sender_id, receiver_id, match_id, message)
-#     message = DB.get_message_by_id(message_id)
-#     return json.dumps(message), 201
-
-# @app.route("/api/messages/<int:match_id>/", methods=["GET"])
-# def get_conversation(match_id):
-#     """
-#     Endpoint for getting a conversation between two users. Use this for when 
-#     the user wants to view a conversation.
-#     """
-#     # check if match exists
-#     match = DB.get_match_by_id(match_id)
-#     if match is None:
-#         return json.dumps({"error":"match not found"}), 404
-
-#     messages = DB.get_messages_by_match_id(match_id)
-#     return json.dumps({"messages":messages}), 200
-
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=8000, debug=True)

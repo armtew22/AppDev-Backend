@@ -17,7 +17,7 @@ EXTENSIONS = ["png", "gif", "jpg", "jpeg"]
 BASE_DIR = os.getcwd()
 S3_BUCKET_NAME = os.environ.get("S3_BUCKET_NAME")
 S3_BASE_URL = f"https://{S3_BUCKET_NAME}.s3.us-east-1.amazonaws.com"
-#missing location and picture storage + bio is represented as a  string for now
+
 class User(db.Model):
     __tablename__ = "user"
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
@@ -25,8 +25,7 @@ class User(db.Model):
     bio = db.Column(db.String, nullable = False)
     name = db.Column(db.String, nullable = False)
     images = db.relationship("Asset", cascade = "delete")
-    #implement the location with iOS, latitude and longitude
-    #https://www.zerotoappstore.com/how-to-get-current-location-in-swift.html
+
 
     def __init__(self, **kwargs):
         self.age = kwargs.get("age", "")
@@ -51,11 +50,11 @@ class Match(db.Model):
     accepted = db.Column(db.Boolean)
 
     def __init__(self, **kwargs):
-        #ask Marya if this is the right way to initialize it
+
         self.time_stamp = kwargs.get("time_stamp", str(datetime.datetime.now()))
         self.user_id_1 = kwargs.get("user_id_1", "")
         self.user_id_2 = kwargs.get("user_id_2", "")
-        #ask Marya if this is the right way to initialize it
+
         self.accepted = kwargs.get("accepted", None)
 
     def serialize(self):
@@ -76,11 +75,8 @@ class Message(db.Model):
 #id, sender_id, receiver_id, timestamp ,match_id, message
     __tablename__ = 'message'
     id = db.Column(db.Integer, primary_key = True, autoincrement = True)
-    #fks that points to user table!
     sender_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable = False)
     receiver_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable = False)
-
-
     time_stamp = db.Column(db.String, nullable = False)
     match_id = db.Column(db.Integer, db.ForeignKey("match.id"), nullable = False)
     message = db.Column(db.String, nullable = False)
@@ -89,7 +85,6 @@ class Message(db.Model):
         self.sender_id = kwargs.get("sender_id","")
         self.receiver_id = kwargs.get("reciever_id", "")
         self.time_stamp = kwargs.get("time_stamp", "")
-        #ask Marya if this is the right way to initialize it
         self.accepted = kwargs.get("accepted", None)
 
     def serialize(self):
